@@ -1,0 +1,10 @@
+IMPORTANT: Create a file named .env in this directory with the following content:
+
+COHERE_API_KEY=your_cohere_api_key_here
+
+Replace "your_cohere_api_key_here" with your actual Cohere API key.
+
+This file is gitignored and will not be committed to version control.
+
+The app will NOT work without this file!
+
