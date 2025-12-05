@@ -4,14 +4,10 @@ import tempfile
 from pathlib import Path
 import json
 from datetime import datetime
-from dotenv import load_dotenv
 try:
     import cohere
 except:
     pass
-
-# Load environment variables
-load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -238,15 +234,18 @@ def get_cohere_api_key():
     # Try Streamlit secrets first
     try:
         if hasattr(st, 'secrets') and 'COHERE_API_KEY' in st.secrets:
-            return st.secrets['COHERE_API_KEY']
+            api_key = st.secrets['COHERE_API_KEY']
+            if api_key:
+                return api_key.strip()
     except:
         pass
     
     # Fallback to environment variable
-    api_key = os.getenv("COHERE_API_KEY")
-    if not api_key:
-        raise ValueError("COHERE_API_KEY not found. Please add it to Streamlit secrets or .env file.")
-    return api_key
+    api_key = os.getenv('COHERE_API_KEY')
+    if api_key:
+        return api_key.strip()
+    
+    raise ValueError("COHERE_API_KEY not found. Please set it as an environment variable or in Streamlit secrets.")
 
 def generate_summary(text):
     """Generate summary using Cohere Chat API"""
