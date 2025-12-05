@@ -234,10 +234,18 @@ HISTORY_FOLDER = Path("history")
 HISTORY_FOLDER.mkdir(exist_ok=True)
 
 def get_cohere_api_key():
-    """Get Cohere API key from environment"""
+    """Get Cohere API key from Streamlit secrets or environment"""
+    # Try Streamlit secrets first
+    try:
+        if hasattr(st, 'secrets') and 'COHERE_API_KEY' in st.secrets:
+            return st.secrets['COHERE_API_KEY']
+    except:
+        pass
+    
+    # Fallback to environment variable
     api_key = os.getenv("COHERE_API_KEY")
     if not api_key:
-        raise ValueError("COHERE_API_KEY not found in environment variables. Please add it to your .env file.")
+        raise ValueError("COHERE_API_KEY not found. Please add it to Streamlit secrets or .env file.")
     return api_key
 
 def generate_summary(text):
