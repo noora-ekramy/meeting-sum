@@ -266,8 +266,12 @@ Please provide a detailed summary:"""
         )
         
         return response.text.strip()
+    except ValueError as e:
+        # API key not found - re-raise to show error to user
+        raise e
     except Exception as e:
         # Fallback: Simple summary extraction
+        st.warning(f"Could not connect to AI service: {str(e)}. Using basic summary.")
         try:
             sentences = text.split('.')
             if len(sentences) > 10:
@@ -377,7 +381,12 @@ Please answer questions accurately based on the information above. Focus on bein
         )
         
         return stream
+    except ValueError as e:
+        # API key not found
+        raise e
     except Exception as e:
+        # Other errors
+        st.error(f"Error connecting to Cohere API: {str(e)}")
         return None
 
 def main():
@@ -646,51 +655,71 @@ def main():
                 })
                 
                 # Get AI response with streaming
-                stream = chat_with_summary_stream(
-                    user_question,
-                    st.session_state.transcript,
-                    st.session_state.summary,
-                    st.session_state.chat_messages
-                )
-                
-                if stream:
-                    # Create placeholder for streaming response
-                    response_placeholder = st.empty()
-                    full_response = ""
+                try:
+                    stream = chat_with_summary_stream(
+                        user_question,
+                        st.session_state.transcript,
+                        st.session_state.summary,
+                        st.session_state.chat_messages
+                    )
                     
-                    # Stream the response
-                    try:
-                        for event in stream:
-                            if event.event_type == "text-generation":
-                                full_response += event.text
-                                # Update the placeholder with streaming text
-                                response_placeholder.markdown(f"""
-                                <div style="background: linear-gradient(180deg, rgba(17, 17, 17, 0.02) 0%, rgba(32, 32, 32, 0.02) 100%),
-                                            linear-gradient(0deg, rgba(82, 82, 82, 0.2), rgba(82, 82, 82, 0.2));
-                                            border: 1px solid rgba(255, 255, 255, 0.1);
-                                            border-radius: 12px;
-                                            padding: 1rem;
-                                            margin: 0.5rem 0;
-                                            margin-right: 20%;">
-                                    <div style="color: #65daff; font-weight: 600; margin-bottom: 0.5rem;">🤖 AI Assistant</div>
-                                    <div style="color: #FFFFFF; line-height: 1.6;">{full_response}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                    if stream:
+                        # Create placeholder for streaming response
+                        response_placeholder = st.empty()
+                        full_response = ""
                         
-                        # Add final response to chat history
+                        # Stream the response
+                        try:
+                            for event in stream:
+                                if event.event_type == "text-generation":
+                                    full_response += event.text
+                                    # Update the placeholder with streaming text
+                                    response_placeholder.markdown(f"""
+                                    <div style="background: linear-gradient(180deg, rgba(17, 17, 17, 0.02) 0%, rgba(32, 32, 32, 0.02) 100%),
+                                                linear-gradient(0deg, rgba(82, 82, 82, 0.2), rgba(82, 82, 82, 0.2));
+                                                border: 1px solid rgba(255, 255, 255, 0.1);
+                                                border-radius: 12px;
+                                                padding: 1rem;
+                                                margin: 0.5rem 0;
+                                                margin-right: 20%;">
+                                        <div style="color: #65daff; font-weight: 600; margin-bottom: 0.5rem;">🤖 AI Assistant</div>
+                                        <div style="color: #FFFFFF; line-height: 1.6;">{full_response}</div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            # Add final response to chat history
+                            if full_response.strip():
+                                st.session_state.chat_messages.append({
+                                    'role': 'assistant',
+                                    'content': full_response.strip()
+                                })
+                            else:
+                                st.session_state.chat_messages.append({
+                                    'role': 'assistant',
+                                    'content': "I received an empty response. Please try again."
+                                })
+                        except Exception as e:
+                            st.session_state.chat_messages.append({
+                                'role': 'assistant',
+                                'content': f"Streaming error: {str(e)}"
+                            })
+                    else:
                         st.session_state.chat_messages.append({
                             'role': 'assistant',
-                            'content': full_response.strip()
+                            'content': "Unable to connect to AI service. Please check your API key in the .env file."
                         })
-                    except Exception as e:
-                        st.session_state.chat_messages.append({
-                            'role': 'assistant',
-                            'content': f"Sorry, I encountered an error: {str(e)}"
-                        })
-                else:
+                        
+                except ValueError as e:
+                    # API key not found
+                    st.error(str(e))
                     st.session_state.chat_messages.append({
                         'role': 'assistant',
-                        'content': "Sorry, I encountered an error while streaming the response."
+                        'content': "⚠️ API key not configured. Please add COHERE_API_KEY to your .env file."
+                    })
+                except Exception as e:
+                    st.session_state.chat_messages.append({
+                        'role': 'assistant',
+                        'content': f"Error: {str(e)}"
                     })
                 
                 st.rerun()
