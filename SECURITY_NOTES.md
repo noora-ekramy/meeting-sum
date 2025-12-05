@@ -9,8 +9,8 @@
 ### Before (Insecure):
 ```python
 def get_cohere_api_key():
-    return os.getenv("COHERE_API_KEY", "7sKG0a1mvd6T3Yy8jRKrWKP8bZ8QnGSL7aChJhzo")
-    #                                    ^ Hardcoded fallback key
+    return os.getenv("COHERE_API_KEY", "hardcoded_key_example")
+    #                                    ^ Hardcoded fallback key (BAD!)
 ```
 
 ### Now (Secure):
